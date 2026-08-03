@@ -6,9 +6,11 @@ from PIL import Image, ImageTk
 TITLE_FONT = "Comic Sans MS", 35
 TEXT_FONT = "Comic Sans MS", 15
 
-cones = ["Sugar", "Waffle", "Cake"]
-flavours = ["Vanilla", "Chocolate", "Strawberry", "Hokey Pokey"]
-toppings = ["Chocolate", "Chocolate Flake", "Cherry", "Sprinkles"]
+cones = {"Sugar": 1, "Waffle": 2, "Cake": 2}
+flavours = {"Vanilla": 3, "Chocolate": 3, "Strawberry": 4, "Hokey Pokey": 3.5}
+toppings = {"Chocolate": 2, "Chocolate Flake": 2.5, "Cherry": 2, "Sprinkles": 1}
+
+order = [] #initialise list
 
 class OrderGui:
     """gui setup"""
@@ -19,8 +21,8 @@ class OrderGui:
         self.root.geometry ("1280x720")
         self.root.resizable(0, 0)
 
-        self.root.columnconfigure([0, 1, 2, 3], weight=1)
-        self.root.rowconfigure([0, 1, 2], weight=1)
+        self.root.columnconfigure([0, 1, 2], weight=1)
+        self.root.rowconfigure([0, 1, 2, 3], weight=1)
 
         # gui layout
 
@@ -30,7 +32,7 @@ class OrderGui:
 
         # order label
         self.orderlb = tk.Label(root, text="Your Order:", bg="skyblue", font=TEXT_FONT)
-        self.orderlb.grid(row=0, column=3, sticky="nsew")
+        self.orderlb.grid(row=0, column=3, sticky="nsew", columnspan=2)
 
         # cone image
         self.img1 = tk.PhotoImage(file="wafflecone.png")
@@ -65,34 +67,61 @@ class OrderGui:
         self.toppinglb.grid(row=3, column=2, sticky="nsew")
 
         # cone combobox
-        self.conesl = ttk.Combobox(root, values=cones, state="readonly")
+        self.conesl = ttk.Combobox(root, values=list(cones.keys()), state="readonly")
         self.conesl.grid(row=4, column=0, sticky="nsew")
 
         # flavour combobox
-        self.flavoursl = ttk.Combobox(root, values=flavours, state="readonly")
+        self.flavoursl = ttk.Combobox(root, values=list(flavours.keys()), state="readonly")
         self.flavoursl.grid(row=4, column=1, sticky="nsew")
 
         # topping combobox
-        self.toppingsl = ttk.Combobox(root, values=toppings, state="readonly")
+        self.toppingsl = ttk.Combobox(root, values=list(toppings.keys()), state="readonly")
         self.toppingsl.grid(row=4, column=2, sticky="nsew", ipady = 5)
 
         #order part
-        self.display = tk.Label(root, text="(placeholder)", bg="lightblue")
-        self.display.grid(row=1, column=3, sticky="nsew", rowspan=2)
+        self.display = tk.Label(root, text="Order is empty.", bg="lightblue", font=TEXT_FONT, wraplength="330")
+        self.display.grid(row=1, column=3, sticky="nsew", rowspan=2, columnspan=2)
 
         #confirm order button
         self.confirmbtn = tk.Button(root, text="Confirm Order", bg="skyblue", font=TEXT_FONT, command=self.ConfirmOrder)
-        self.confirmbtn.grid(row=3, column=3, sticky="nsew", rowspan=2)
+        self.confirmbtn.grid(row=3, column=4, sticky="nsew", rowspan=2)
+
+        #add item to order button
+        self.addbtn = tk.Button(root, text="Add item", bg="skyblue", font=TEXT_FONT, width=13, command=self.AddItem)
+        self.addbtn.grid(row=3, column=3, sticky="nsew")
+
+        #remove item button
+        self.removebtn = tk.Button(root, text="Remove item", bg="skyblue", font=TEXT_FONT)
+        self.removebtn.grid(row=4, column=3, sticky="nsew")
     
     def ConfirmOrder(self):
         cone = self.conesl.get()
         flavour = self.flavoursl.get()
-        toppings = self.toppingsl.get()
+        toppings = self.toppingsl.get() #later ur gonna have to query the dictionary using the keys from the order to get the total so thats gonna be fun
 
         print(cone)
         print(flavour)
         print(toppings)
         pass
+
+    def AddItem(self):
+        """takes in user input from comboboxes and updates the sidebar with the accordining order"""
+        #for later iterations for this to actually work ur gonna have to append the item to the list and then use that list to update the gridbox whatever label textbox
+        cone = self.conesl.get() #V1 THIS LACKS VALIDATION AND IT CAN ONLY HANDLE ONE INSTANCE AT A TIME
+        flavour = self.flavoursl.get()
+        toppings = self.toppingsl.get()
+
+        order.append([cone, flavour, toppings])
+        for list in order:
+            for i in list:
+                text = (" ".join(order[i])) #NOT DONE !!
+        print(text)
+        self.display.configure(text=order, anchor="nw", justify="left")
+#f'- {cone} Cone, {flavour} Flavour, {toppings} Topping'
+        pass
+
+
+
 
 root = tk.Tk()
 app = OrderGui(root)
