@@ -101,27 +101,34 @@ class OrderGui:
 
         print(cone)
         print(flavour)
-        print(toppings)
+        print(toppings) #placeholder for now
         pass
 
     def AddItem(self):
         """takes in user input from comboboxes and updates the sidebar with the accordining order"""
         #for later iterations for this to actually work ur gonna have to append the item to the list and then use that list to update the gridbox whatever label textbox
-        cone = self.conesl.get() #V1 THIS LACKS VALIDATION AND IT CAN ONLY HANDLE ONE INSTANCE AT A TIME
+        cone = self.conesl.get() #V2 actually is dynamic main issue is just formatting and spacing 
         flavour = self.flavoursl.get()
         toppings = self.toppingsl.get()
+        res = ""
+        count = 0 
 
         order.append([cone, flavour, toppings])
-        for list in order:
-            for i in list:
-                text = (" ".join(order[i])) #NOT DONE !!
-        print(text)
-        self.display.configure(text=order, anchor="nw", justify="left")
-#f'- {cone} Cone, {flavour} Flavour, {toppings} Topping'
+        for item in order: # convert order list to string - does not alter order
+            for x in item:
+                res += x + " "
+                if count == 0:
+                    res += "Cone, "
+                    count = 1
+                elif count == 1:
+                    res += "Flavour, "
+                    count = 2
+                elif count == 2:
+                    res += "Topping\n\n" #theres probably a more efficient way to do this 
+                    count = 0
+        print(res.strip())
+        self.display.configure(text=res, anchor="nw", justify="left") #update label w/ order string
         pass
-
-
-
 
 root = tk.Tk()
 app = OrderGui(root)
