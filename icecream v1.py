@@ -1,14 +1,15 @@
 import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
+from tkinter import scrolledtext
 
 #constants
 TITLE_FONT = "Comic Sans MS", 35
 TEXT_FONT = "Comic Sans MS", 15
 
 cones = {"Sugar": 1, "Waffle": 2, "Cake": 2}
-flavours = {"Vanilla": 3, "Chocolate": 3, "Strawberry": 4, "Hokey Pokey": 3.5}
-toppings = {"Chocolate": 2, "Chocolate Flake": 2.5, "Cherry": 2, "Sprinkles": 1}
+flavours = {"Vanilla": 3, "Chocolate": 3, "Strawberry": 4, "Hokey Pokey": 3.5, "Soft Serve": 2.5}
+toppings = {"Chocolate": 2, "Chocolate Flake": 2.5, "Cherry": 2, "Sprinkles": 1, "Strawberry Syrup": 1.5}
 
 order = [] #initialise list
 
@@ -79,8 +80,9 @@ class OrderGui:
         self.toppingsl.grid(row=4, column=2, sticky="nsew", ipady = 5)
 
         #order part
-        self.display = tk.Label(root, text="Order is empty.", bg="lightblue", font=TEXT_FONT, wraplength="330")
+        self.display = scrolledtext.ScrolledText(root, wrap=tk.WORD, bg="lightblue", font=TEXT_FONT, width=30) #scrollable box !!
         self.display.grid(row=1, column=3, sticky="nsew", rowspan=2, columnspan=2)
+        self.display.insert(tk.INSERT, "Order is empty.")
 
         #confirm order button
         self.confirmbtn = tk.Button(root, text="Confirm Order", bg="skyblue", font=TEXT_FONT, command=self.ConfirmOrder)
@@ -127,7 +129,8 @@ class OrderGui:
                     res += "Topping\n\n" #theres probably a more efficient way to do this 
                     count = 0
         print(res.strip())
-        self.display.configure(text=res, anchor="nw", justify="left") #update label w/ order string
+        self.display.delete("1.0", tk.END) #clear display
+        self.display.insert(tk.INSERT, res) #update scrollable textbox w/ order string
         pass
 
 root = tk.Tk()
