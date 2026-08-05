@@ -93,7 +93,7 @@ class OrderGui:
         self.addbtn.grid(row=3, column=3, sticky="nsew")
 
         #remove item button
-        self.removebtn = tk.Button(root, text="Remove item", bg="skyblue", font=TEXT_FONT)
+        self.removebtn = tk.Button(root, text="Remove item", bg="skyblue", font=TEXT_FONT, command=self.RemoveItem)
         self.removebtn.grid(row=4, column=3, sticky="nsew")
     
     def ConfirmOrder(self):
@@ -108,8 +108,7 @@ class OrderGui:
 
     def AddItem(self):
         """takes in user input from comboboxes and updates the sidebar with the accordining order"""
-        #for later iterations for this to actually work ur gonna have to append the item to the list and then use that list to update the gridbox whatever label textbox
-        cone = self.conesl.get() #V2 actually is dynamic main issue is just formatting and spacing 
+        cone = self.conesl.get() #V3 REFORMATTED WITH A SCROLLABLE SIDEBAR
         flavour = self.flavoursl.get()
         toppings = self.toppingsl.get()
         res = ""
@@ -132,6 +131,29 @@ class OrderGui:
         self.display.delete("1.0", tk.END) #clear display
         self.display.insert(tk.INSERT, res) #update scrollable textbox w/ order string
         pass
+
+    def RemoveItem(self):
+        """opens a seperate window that allows the user to select and remove items from their order"""
+        #v1 extremely barebones - current issues | duplicate orders share the same selection so if u add two of like X it selects both of them so u cant select just one
+        self.selected_option = tk.StringVar(value=order[0])
+
+        self.removal_window = tk.Toplevel(root)
+        self.removal_window.title("Removal window")
+        self.removal_window.geometry("700x700")
+        self.root.resizable(0, 0)
+
+        for item in order:
+            self.rb = tk.Radiobutton(
+                self.removal_window,
+                text=item,
+                variable=self.selected_option,
+                value=item,
+                anchor="w"
+                )
+            self.rb.pack(fill="x", padx=20, pady=2)
+
+        tk.Label(self.removal_window, text="hihi").pack(pady=20)
+
 
 root = tk.Tk()
 app = OrderGui(root)
