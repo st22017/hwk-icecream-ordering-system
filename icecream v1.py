@@ -108,15 +108,16 @@ class OrderGui:
 
     def AddItem(self):
         """takes in user input from comboboxes and updates the sidebar with the accordining order"""
-        cone = self.conesl.get() #V3 REFORMATTED WITH A SCROLLABLE SIDEBAR
+        cone = self.conesl.get() #V3 REFORMATTED WITH A SCROLLABLE SIDEBAR - STILL LACKS VALIDATION
         flavour = self.flavoursl.get()
         toppings = self.toppingsl.get()
         res = ""
         count = 0 
 
         order.append([cone, flavour, toppings])
-        for item in order: # convert order list to string - does not alter order
+        for item in order: # convert order list to string - does not alter order however this just does the Whole order and not as individual items
             for x in item:
+                #this is so messy
                 res += x + " "
                 if count == 0:
                     res += "Cone, "
@@ -127,7 +128,8 @@ class OrderGui:
                 elif count == 2:
                     res += "Topping\n\n" #theres probably a more efficient way to do this 
                     count = 0
-        print(res.strip())
+        print(res.strip()) 
+        print(order)
         self.display.delete("1.0", tk.END) #clear display
         self.display.insert(tk.INSERT, res) #update scrollable textbox w/ order string
         pass
@@ -142,17 +144,22 @@ class OrderGui:
         self.removal_window.geometry("700x700")
         self.root.resizable(0, 0)
 
-        for item in order:
-            self.rb = tk.Radiobutton(
-                self.removal_window,
-                text=item,
-                variable=self.selected_option,
-                value=item,
-                anchor="w"
-                )
-            self.rb.pack(fill="x", padx=20, pady=2)
+        self.var_list = []
+
+        for index, text_value in enumerate(order):
+            self.statusvar = tk.IntVar()
+            self.var_list.append(self.statusvar)
+            #for this part you need to access each list within the order list to avoid printing the entire thing
+            self.cb = tk.Checkbutton(self.removal_window, text=f"{text_value}, ({index})", variable=self.statusvar) 
+            self.cb.pack(anchor="w")
+            print(self.statusvar.get())
 
         tk.Label(self.removal_window, text="hihi").pack(pady=20)
+
+        self.btn1 = tk.Button(self.removal_window)
+        self.btn1.grid(row=0, column=0) #figure out how to work grid w toplevel Later
+        
+
 
 
 root = tk.Tk()
