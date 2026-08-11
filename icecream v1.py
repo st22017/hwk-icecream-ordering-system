@@ -14,13 +14,16 @@ toppings = {"Chocolate": 2, "Chocolate Flake": 2.5, "Cherry": 2, "Sprinkles": 1,
 order = [] #initialise list
 
 class OrderGui:
-    """gui setup"""
+    
     def __init__(self, root):
+        """gui setup"""
         #initialisation
         self.root = root
         self.root.title("Ordering Program")
         self.root.geometry ("1280x720")
         self.root.resizable(0, 0)
+        
+        self.order_converter = OrderConversions()
 
         self.root.columnconfigure([0, 1, 2], weight=1)
         self.root.rowconfigure([0, 1, 2, 3], weight=1)
@@ -83,6 +86,7 @@ class OrderGui:
         self.display = scrolledtext.ScrolledText(root, wrap=tk.WORD, bg="lightblue", font=TEXT_FONT, width=30) #scrollable box !!
         self.display.grid(row=1, column=3, sticky="nsew", rowspan=2, columnspan=2)
         self.display.insert(tk.INSERT, "Order is empty.")
+        self.display.config(state=tk.DISABLED)
 
         #confirm order button
         self.confirmbtn = tk.Button(root, text="Confirm Order", bg="skyblue", font=TEXT_FONT, command=self.ConfirmOrder)
@@ -107,60 +111,98 @@ class OrderGui:
         pass
 
     def AddItem(self):
-        """takes in user input from comboboxes and updates the sidebar with the accordining order"""
-        cone = self.conesl.get() #V3 REFORMATTED WITH A SCROLLABLE SIDEBAR - STILL LACKS VALIDATION
+        """takes in user input from comboboxes and updates the sidebar with the according order"""
+        cone = self.conesl.get() # V3 REFORMATTED WITH A SCROLLABLE SIDEBAR - STILL LACKS VALIDATION
         flavour = self.flavoursl.get()
         toppings = self.toppingsl.get()
-        res = ""
-        count = 0 
-
         order.append([cone, flavour, toppings])
-        for item in order: # convert order list to string - does not alter order however this just does the Whole order and not as individual items
-            for x in item:
-                #this is so messy
-                res += x + " "
-                if count == 0:
-                    res += "Cone, "
-                    count = 1
-                elif count == 1:
-                    res += "Flavour, "
-                    count = 2
-                elif count == 2:
-                    res += "Topping\n\n" #theres probably a more efficient way to do this 
-                    count = 0
-        print(res.strip()) 
-        print(order)
-        self.display.delete("1.0", tk.END) #clear display
-        self.display.insert(tk.INSERT, res) #update scrollable textbox w/ order string
+        ordertext = self.order_converter.convert_to_text(order)
+
+        self.display.config(state=tk.NORMAL)
+        self.display.delete("1.0", tk.END) # clear display
+        self.display.insert(tk.INSERT, ordertext) # update scrollable textbox w/ neworder string
+        self.display.config(state=tk.DISABLED)
         pass
 
     def RemoveItem(self):
         """opens a seperate window that allows the user to select and remove items from their order"""
-        #v1 extremely barebones - current issues | duplicate orders share the same selection so if u add two of like X it selects both of them so u cant select just one
+        # V2 WE ARE SO BACK ALL THE INTERNAL WORKINGS FOR TEXT FORMATTING ARE TIDY AND GOOD TO GO  
+        # Still wip is the stylisation and allat and also the actual item removal part lol
         self.selected_option = tk.StringVar(value=order[0])
 
+        # initialise toplevel pop-out window
         self.removal_window = tk.Toplevel(root)
         self.removal_window.title("Removal window")
-        self.removal_window.geometry("700x700")
+        self.removal_window.geometry("400x500")
         self.root.resizable(0, 0)
 
+        # IntVar list for tracking what checkboxes are selected 
         self.var_list = []
 
-        for index, text_value in enumerate(order):
+        for index, value in enumerate(order): 
+            # idk if u need the value variable there but it breaks if i get rid of it soooooo its here to stay
             self.statusvar = tk.IntVar()
-            self.var_list.append(self.statusvar)
-            #for this part you need to access each list within the order list to avoid printing the entire thing
-            self.cb = tk.Checkbutton(self.removal_window, text=f"{text_value}, ({index})", variable=self.statusvar) 
-            self.cb.pack(anchor="w")
-            print(self.statusvar.get())
+            self.var_list.append(self.statusvar) # add new statusvar to list for tracking
 
-        tk.Label(self.removal_window, text="hihi").pack(pady=20)
+            # convert each order into an appropriate textstring
+            res = self.order_converter.convert_item_to_text(order, index) 
+            print(res.strip()) #debug code
+
+            # create checkbox using the converted order textstring 
+            self.cb = tk.Checkbutton(self.removal_window, text=f"Item {index+1}: {res}", variable=self.statusvar)
+            self.cb.pack(anchor="w")
+
+        tk.Label(self.removal_window, text="hihi", font=TEXT_FONT).pack(pady=20)
 
         self.btn1 = tk.Button(self.removal_window)
-        self.btn1.grid(row=0, column=0) #figure out how to work grid w toplevel Later
-        
+        self.btn1.pack()
 
 
+
+class OrderConversions:
+    """collection of functions that convert the order 2D list into formatted text strings ready for GUI displays"""
+    # im so proud of these and how they're implemented within their respective loops
+    def convert_to_text(self, list_input):
+        """converts the order 2d list to a formatted string."""
+        res = "" # initialise variables
+        count = 0 
+        for item in list_input: 
+            for x in item:
+                res += x + " "
+                # first item within an order - cone
+                if count == 0:
+                    res += "Cone, "
+                    count = 1
+                # second item - flavour
+                elif count == 1:
+                    res += "Flavour, "
+                    count = 2
+                # third item - topping
+                elif count == 2:
+                    res += "Topping\n\n"
+                    count = 0
+        return res.strip()
+
+    def convert_item_to_text(self, list_input, position):
+        """Converts a specified position of a 2D list into a formatted text string."""
+        # literally just reused the same code as above slightly modified
+        res = ""
+        count = 0 
+        for item in list_input[position]:
+                res += item + " "
+                # first item within an order - cone
+                if count == 0:
+                    res += "Cone, "
+                    count = 1
+                # second item - flavour
+                elif count == 1:
+                    res += "Flavour, "
+                    count = 2
+                # third item - topping
+                elif count == 2:
+                    res += "Topping"
+                    count = 0
+        return res.strip()
 
 root = tk.Tk()
 app = OrderGui(root)
