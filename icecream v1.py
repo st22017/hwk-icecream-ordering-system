@@ -84,10 +84,10 @@ class OrderGui:
         self.toppingcb.grid(row=4, column=2, sticky="nsew", ipady = 5)
 
         #order part
-        self.display = scrolledtext.ScrolledText(root, wrap=tk.WORD, bg="lightblue", font=TEXT_FONT, width=30) #scrollable box !!
-        self.display.grid(row=1, column=3, sticky="nsew", rowspan=2, columnspan=2)
-        self.display.insert(tk.INSERT, "Order is empty.")
-        self.display.config(state=tk.DISABLED)
+        self.display1 = scrolledtext.ScrolledText(root, wrap=tk.WORD, bg="lightblue", font=TEXT_FONT, width=30) #scrollable box !!
+        self.display1.grid(row=1, column=3, sticky="nsew", rowspan=2, columnspan=2)
+        self.display1.insert(tk.INSERT, "Order is empty.")
+        self.display1.config(state=tk.DISABLED)
 
         #confirm order button
         self.confirmbtn = tk.Button(root, text="Confirm Order", bg="skyblue", font=TEXT_FONT, command=self.confirm_order)
@@ -107,14 +107,44 @@ class OrderGui:
         print(self.receipt)
         print(self.total)
         # WORK IN PROGRESS AAAHHHHHH
-        pass
+
+        if order: # if order has items
+
+            self.confirm_window = tk.Toplevel(root, bg="lightblue")
+            self.confirm_window.title("Order Confirmation window")
+            self.confirm_window.geometry("400x600")
+            self.confirm_window.resizable(0, 0)
+            self.confirm_window.transient(root)
+            self.confirm_window.grab_set()
+
+            self.lb1 = tk.Label(self.confirm_window, text="Order Confirmation window", font=TEXT_FONT)
+            self.lb1.pack(pady=10)
+
+            # create scrollbox for the order 
+            self.display2 = scrolledtext.ScrolledText(self.confirm_window, wrap=tk.WORD, bg="white", font=TEXT_FONT, width=30, height=10)
+            self.display2.pack(pady=10)
+            self.display2.config(state=tk.NORMAL)
+            self.display2.insert(tk.INSERT, self.receipt) 
+            self.display2.config(state=tk.DISABLED)
+
+            self.lb2 = tk.Label(self.confirm_window, text=(f"Your total is ${self.total}."), font=TEXT_FONT)
+            self.lb2.pack(pady=10)
+
+            self.btn1 = tk.Button(self.confirm_window, text="Go back to edit", font=TEXT_FONT, command = lambda:[self.confirm_window.destroy(), self.confirm_window.grab_release()])
+            self.btn1.pack(pady=10)
+
+            self.btn2 = tk.Button(self.confirm_window, text="Confirm order", font=TEXT_FONT)
+            self.btn2.pack(pady=10)
+        
+        else: #if order is empty
+            self.empty_order_warning()
 
     def add_item(self):
         """takes in user input from comboboxes and updates the sidebar with the according order"""
         # V4 FULLY FUNCTIONAL
         self.comboboxes = [self.conecb, self.flavourcb, self.toppingcb]
 
-        if any(not cb.get().strip() for cb in self.comboboxes):
+        if any(not cb.get().strip() for cb in self.comboboxes): #validation !!!
             self.show_combobox_warning()
         else:
             cone = self.conecb.get() 
@@ -123,45 +153,48 @@ class OrderGui:
             order.append([cone, flavour, toppings]) # add item to order list
             ordertext = self.order_converter.convert_to_text(order)
 
-            self.display.config(state=tk.NORMAL)
-            self.display.delete("1.0", tk.END) # clear display
-            self.display.insert(tk.INSERT, ordertext) # update scrollable textbox w/ neworder string
-            self.display.config(state=tk.DISABLED)
+            self.display1.config(state=tk.NORMAL)
+            self.display1.delete("1.0", tk.END) # clear display
+            self.display1.insert(tk.INSERT, ordertext) # update scrollable textbox w/ neworder string
+            self.display1.config(state=tk.DISABLED)
             pass
 
     def remove_item(self):
         """opens a seperate window that allows the user to select and remove items from their order"""
         # V4 FULLY FUNCTIONAL !
-        self.selected_option = tk.StringVar(value=order[0])
+        if order: #if there are items in order
+            # initialise toplevel pop-out window
+            self.selected_option = tk.StringVar(value=order[0])
+            self.removal_window = tk.Toplevel(root, bg="lightblue")
+            self.removal_window.title("Removal window")
+            self.removal_window.geometry("400x500")
+            # variable list for tracking what checkboxes are selected 
+            self.var_list = []
 
-        # initialise toplevel pop-out window
-        self.removal_window = tk.Toplevel(root, bg="lightblue")
-        self.removal_window.title("Removal window")
-        self.removal_window.geometry("400x500")
-        self.root.resizable(0, 0)
+            self.lb1 = tk.Label(self.removal_window, text="Item removal window", font=TEXT_FONT)
+            self.lb1.pack(pady=20)
 
-        # variable list for tracking what checkboxes are selected 
-        self.var_list = []
+            for index, value in enumerate(order): 
+                # idk if u need the value variable there but it breaks if i get rid of it soooooo its here to stay
+                self.statusvar = tk.BooleanVar()
+                self.var_list.append(self.statusvar) # add new statusvar to list for tracking
+                
+                # convert each order into an appropriate textstring
+                res = self.order_converter.convert_item_to_text(order, index)
 
-        self.lb1 = tk.Label(self.removal_window, text="Item removal window", font=TEXT_FONT)
-        self.lb1.pack(pady=20)
+                # create checkbox using the converted order textstring 
+                self.cb = tk.Checkbutton(self.removal_window, text=f"Item {index+1}: {res}", variable=self.statusvar)
+                self.cb.pack(anchor="w")
 
-        for index, value in enumerate(order): 
-            # idk if u need the value variable there but it breaks if i get rid of it soooooo its here to stay
-            self.statusvar = tk.BooleanVar()
-            self.var_list.append(self.statusvar) # add new statusvar to list for tracking
+            self.btn1 = tk.Button(self.removal_window, text="Remove selected items from order", font=TEXT_FONT, 
+            command= lambda: [self.remove_selected(), self.removal_window.destroy(), self.show_removal_info()])
 
-            # convert each order into an appropriate textstring
-            res = self.order_converter.convert_item_to_text(order, index)
+            self.btn1.pack(pady=20)
 
-            # create checkbox using the converted order textstring 
-            self.cb = tk.Checkbutton(self.removal_window, text=f"Item {index+1}: {res}", variable=self.statusvar)
-            self.cb.pack(anchor="w")
+        else:
+            self.empty_order_warning()
 
-        self.btn1 = tk.Button(self.removal_window, text="Remove selected items from order", font=TEXT_FONT, 
-        command= lambda: [self.remove_selected(), self.removal_window.destroy(), self.show_removal_info()])
-
-        self.btn1.pack(pady=20) 
+        
         
     def remove_selected(self):
         """loops through the checkbox variable list and removes ticked items"""
@@ -174,18 +207,22 @@ class OrderGui:
         print(order)
         ordertext = self.order_converter.convert_to_text(order)
         
-        self.display.config(state=tk.NORMAL)
-        self.display.delete("1.0", tk.END) # clear display
-        self.display.insert(tk.INSERT, ordertext) # update scrollable textbox w/ neworder string
-        self.display.config(state=tk.DISABLED)
+        self.display1.config(state=tk.NORMAL)
+        self.display1.delete("1.0", tk.END) # clear display
+        self.display1.insert(tk.INSERT, ordertext) # update scrollable textbox w/ neworder string
+        self.display1.config(state=tk.DISABLED)
 
     def show_removal_info(self):
         """creates a small popup box confirming item removal"""
         self.infobox1 = messagebox.showinfo("Success", f"Removed {self.count} items succesfully!")
     
     def show_combobox_warning(self):
-        """small popup boxs"""
+        """small popup box"""
         self.infobox2 = messagebox.showerror("Error", "Please select an option for cone, flavour and topping!")
+
+    def empty_order_warning(self):
+        """small popup box"""
+        self.infobox2 = messagebox.showerror("Error", "You have no items in your order!")
 
 
 
@@ -197,14 +234,16 @@ class OrderConversions:
         """converts the order 2d list to a formatted string."""
         res = "" # initialise variables
         for index, value in enumerate(list_input):
-            res += (f"{list_input[index][0]} Cone, {list_input[index][1]} Flavour, {list_input[index][2]} Topping \n\n")
+            individual_price = cones.get(list_input[index][0]) + flavours.get(list_input[index][1]) + toppings.get(list_input[index][2])
+            res += (f"{list_input[index][0]} Cone, {list_input[index][1]} Flavour, {list_input[index][2]} Topping - ${individual_price} \n\n")
 
         return res.strip()
 
     def convert_item_to_text(self, list_input, position):
         """Converts a specified position of a 2D list into a formatted text string."""
         # literally just reused the same code as above slightly modified
-        res = (f"{list_input[position][0]} Cone, {list_input[position][1]} Flavour, {list_input[position][2]} Topping") 
+        price = cones.get(list_input[position][0]) + flavours.get(list_input[position][1]) + toppings.get(list_input[position][2])
+        res = (f"{list_input[position][0]} Cone, {list_input[position][1]} Flavour, {list_input[position][2]} Topping - ${price}") 
         return res.strip()
     
     def finalise_order(self, list_input):
@@ -212,7 +251,8 @@ class OrderConversions:
         res = ""
         price = 0
         for index, value in enumerate(list_input):
-            res += (f"{list_input[index][0]} Cone, {list_input[index][1]} Flavour, {list_input[index][2]} Topping \n\n")
+            individual_price = cones.get(list_input[index][0]) + flavours.get(list_input[index][1]) + toppings.get(list_input[index][2])
+            res += (f"{list_input[index][0]} Cone, {list_input[index][1]} Flavour, {list_input[index][2]} Topping - ${individual_price} \n\n")
             price += cones.get(list_input[index][0]) + flavours.get(list_input[index][1]) + toppings.get(list_input[index][2])
         return res.strip(), price
 
