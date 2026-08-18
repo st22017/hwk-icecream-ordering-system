@@ -7,6 +7,7 @@ from tkinter import messagebox
 #constants
 TITLE_FONT = "Comic Sans MS", 35
 TEXT_FONT = "Comic Sans MS", 15
+SUBTEXT_FONT = "Comic Sans MS", 8
 
 cones = {"Sugar": 1, "Waffle": 2, "Cake": 2}
 flavours = {"Vanilla": 3, "Chocolate": 3, "Strawberry": 4, "Hokey Pokey": 3.5, "Soft Serve": 2.5}
@@ -91,7 +92,7 @@ class OrderGui:
 
         #confirm order button
         self.confirmbtn = tk.Button(root, text="Confirm Order", bg="skyblue", font=TEXT_FONT, command=self.confirm_order)
-        self.confirmbtn.grid(row=3, column=4, sticky="nsew", rowspan=2)
+        self.confirmbtn.grid(row=4, column=4, sticky="nsew")
 
         #add item to order button
         self.addbtn = tk.Button(root, text="Add item", bg="skyblue", font=TEXT_FONT, width=13, command=self.add_item)
@@ -100,6 +101,9 @@ class OrderGui:
         #remove item button
         self.removebtn = tk.Button(root, text="Remove items", bg="skyblue", font=TEXT_FONT, command=self.remove_item)
         self.removebtn.grid(row=4, column=3, sticky="nsew")
+
+        self.neworderbtn = tk.Button(root, text="Start new order", bg="skyblue", font=TEXT_FONT, command=lambda: self.start_new_order())
+        self.neworderbtn.grid(row=3, column=4, sticky="nsew")
     
     def confirm_order(self):
         """finalises order"""
@@ -161,18 +165,41 @@ class OrderGui:
 
     def remove_item(self):
         """opens a seperate window that allows the user to select and remove items from their order"""
-        # V4 FULLY FUNCTIONAL !
+        # V5 SCROLLABLE BOX ADDED
+        # could possibly look to decompose this as its quite big
         if order: #if there are items in order
             # initialise toplevel pop-out window
             self.selected_option = tk.StringVar(value=order[0])
-            self.removal_window = tk.Toplevel(root, bg="lightblue")
+            self.removal_window = tk.Toplevel(bg="lightblue")
             self.removal_window.title("Removal window")
-            self.removal_window.geometry("400x500")
-            # variable list for tracking what checkboxes are selected 
-            self.var_list = []
+            self.removal_window.geometry("400x550")
+            self.removal_window.transient(root)
+            self.removal_window.grab_set()
 
             self.lb1 = tk.Label(self.removal_window, text="Item removal window", font=TEXT_FONT)
-            self.lb1.pack(pady=20)
+            self.lb1.pack(pady=10)
+
+            self.lb2 = tk.Label(self.removal_window, text="(The box below is scrollable.)", font=SUBTEXT_FONT)
+            self.lb2.pack(pady=10)
+
+            #initialise canvas frame for the scrollbox
+            self.main_frame = ttk.Frame(self.removal_window)
+            self.main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+            self.canvas = tk.Canvas(self.main_frame, highlightthickness=0)
+            self.scrollbar = ttk.Scrollbar(self.main_frame, orient=tk.VERTICAL, command=self.canvas.yview)
+
+            self.scrollable_frame = ttk.Frame(self.canvas)
+
+            self.scrollable_frame.bind(
+                "<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+            )
+
+            self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+            self.canvas.configure(yscrollcommand=self.scrollbar.set)
+
+            # variable list for tracking what checkboxes are selected 
+            self.var_list = []
 
             for index, value in enumerate(order): 
                 # idk if u need the value variable there but it breaks if i get rid of it soooooo its here to stay
@@ -183,18 +210,30 @@ class OrderGui:
                 res = self.order_converter.convert_item_to_text(order, index)
 
                 # create checkbox using the converted order textstring 
-                self.cb = tk.Checkbutton(self.removal_window, text=f"Item {index+1}: {res}", variable=self.statusvar)
+                self.cb = tk.Checkbutton(self.scrollable_frame, text=f"Item {index+1}: {res}", variable=self.statusvar)
                 self.cb.pack(anchor="w")
+            
+            self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-            self.btn1 = tk.Button(self.removal_window, text="Remove selected items from order", font=TEXT_FONT, 
-            command= lambda: [self.remove_selected(), self.removal_window.destroy(), self.show_removal_info()])
+            def _on_mousewheel(event):
+                self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+                    
+            self.canvas.bind_all("<MouseWheel>", _on_mousewheel)
 
-            self.btn1.pack(pady=20)
+            self.btn1 = tk.Button(self.removal_window, text="Go back to edit", font=TEXT_FONT, 
+            command = lambda:[self.removal_window.destroy(), self.removal_window.grab_release(), 
+                              self.removal_window.unbind_all("<MouseWheel>")])
+            self.btn1.pack(pady=10)
+
+            self.btn2 = tk.Button(self.removal_window, text="Remove selected items from order", font=TEXT_FONT, 
+            command= lambda: [self.remove_selected(), self.removal_window.destroy(), self.show_removal_info(), 
+                              self.removal_window.grab_release(), self.removal_window.unbind_all("<MouseWheel>")])  
+            # ok its a lot of commands but stuff breaks if i dont do this
+            self.btn2.pack(pady=10)
 
         else:
             self.empty_order_warning()
-
-        
         
     def remove_selected(self):
         """loops through the checkbox variable list and removes ticked items"""
@@ -220,10 +259,30 @@ class OrderGui:
         """small popup box"""
         self.infobox2 = messagebox.showerror("Error", "Please select an option for cone, flavour and topping!")
 
+    def confirm_action(self):
+        self.response = messagebox.askyesno("Confirmation", "Are you sure you want to proceed?")
+        
+        if self.response:
+            return True
+        else: 
+            return False
+
     def empty_order_warning(self):
         """small popup box"""
         self.infobox2 = messagebox.showerror("Error", "You have no items in your order!")
 
+    def start_new_order(self):
+        """Resets the window back to it's starting state and resets the order."""
+        order.clear() #clear list
+
+        self.conecb.set('') #reset comboboxes
+        self.flavourcb.set('')
+        self.toppingcb.set('')
+
+        self.display1.config(state=tk.NORMAL)
+        self.display1.delete("1.0", tk.END) # clear display
+        self.display1.config(state=tk.DISABLED)
+        pass
 
 
 class OrderConversions:
@@ -255,9 +314,6 @@ class OrderConversions:
             res += (f"{list_input[index][0]} Cone, {list_input[index][1]} Flavour, {list_input[index][2]} Topping - ${individual_price} \n\n")
             price += cones.get(list_input[index][0]) + flavours.get(list_input[index][1]) + toppings.get(list_input[index][2])
         return res.strip(), price
-
-    
-    
 
 # main loop woohoo
 root = tk.Tk()
