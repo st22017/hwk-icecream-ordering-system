@@ -41,13 +41,13 @@ class OrderGui:
         self.orderlb.grid(row=0, column=3, sticky="nsew", columnspan=2)
 
         # order prices
-        self.img1 = Image.open("icecreamprices.png")
+        self.img1 = Image.open("Images/icecreamprices.png")
         self.tk_img1 = ImageTk.PhotoImage(self.img1)
         self.img1lb = tk.Label(root, image=self.tk_img1, width=55, height=55)
         self.img1lb.grid(row=1, column=0, sticky="nsew", columnspan=2, rowspan=2)
 
         # topping image
-        self.img3 = Image.open("99_ice_cream.png")
+        self.img3 = Image.open("Images/99_ice_cream.png")
         self.img3resize = self.img3.resize((300, 450), Image.LANCZOS)
         self.tk_img3 = ImageTk.PhotoImage(self.img3resize)
         self.img3lb = tk.Label(root, image=self.tk_img3, width=22, height=25)
