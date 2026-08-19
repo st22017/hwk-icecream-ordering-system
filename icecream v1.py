@@ -10,8 +10,8 @@ TEXT_FONT = "Comic Sans MS", 15
 SUBTEXT_FONT = "Comic Sans MS", 8
 
 cones = {"Sugar": 1, "Waffle": 2, "Cake": 2}
-flavours = {"Vanilla": 3, "Chocolate": 3, "Strawberry": 4, "Hokey Pokey": 3.5, "Soft Serve": 2.5}
-toppings = {"Chocolate": 2, "Chocolate Flake": 2.5, "Cherry": 2, "Sprinkles": 1, "Strawberry Syrup": 1.5}
+flavours = {"Vanilla": 3, "Chocolate": 3, "Strawberry": 4, "Blueberry": 4.5, "Hokey Pokey": 3.5, "Soft Serve": 2.5}
+toppings = {"None": 0, "Chocolate Syrup": 2, "Chocolate Flake": 2.5, "Cherry": 2.5, "Sprinkles": 1, "Strawberry Syrup": 2}
 
 order = [] #initialise list
 
@@ -40,18 +40,11 @@ class OrderGui:
         self.orderlb = tk.Label(root, text="Your Order:", bg="skyblue", font=TEXT_FONT)
         self.orderlb.grid(row=0, column=3, sticky="nsew", columnspan=2)
 
-        # cone image
-        self.img1 = tk.PhotoImage(file="wafflecone.png")
-        self.img1lb = tk.Label(root, image=self.img1, width=22)
-        self.img1lb.grid(row=1, column=0, sticky="nsew", rowspan = 2)
-
-        # resize image
-        self.img2 = Image.open("neapolitan-ice-cream.png")
-        self.img2resize = self.img2.resize((300, 350), Image.LANCZOS)
-        self.tk_img2 = ImageTk.PhotoImage(self.img2resize)
-        # place into grid + label
-        self.img2lb = tk.Label(root, image=self.tk_img2, width=22)
-        self.img2lb.grid(row=1, column=1, sticky="nsew", rowspan = 2)
+        # order prices
+        self.img1 = Image.open("icecreamprices.png")
+        self.tk_img1 = ImageTk.PhotoImage(self.img1)
+        self.img1lb = tk.Label(root, image=self.tk_img1, width=55, height=55)
+        self.img1lb.grid(row=1, column=0, sticky="nsew", columnspan=2, rowspan=2)
 
         # topping image
         self.img3 = Image.open("99_ice_cream.png")
@@ -102,12 +95,12 @@ class OrderGui:
         self.removebtn = tk.Button(root, text="Remove items", bg="skyblue", font=TEXT_FONT, command=self.remove_item)
         self.removebtn.grid(row=4, column=3, sticky="nsew")
 
-        self.neworderbtn = tk.Button(root, text="Start new order", bg="skyblue", font=TEXT_FONT, command=lambda: self.start_new_order())
+        self.neworderbtn = tk.Button(root, text="Start new order", bg="skyblue", font=TEXT_FONT, command=lambda: self.confirm_new_order())
         self.neworderbtn.grid(row=3, column=4, sticky="nsew")
     
     def confirm_order(self):
         """finalises order"""
-        self.receipt, self.total = self.order_converter.finalise_order(order)
+        self.receipt, self.total, self.items = self.order_converter.finalise_order(order)
         print(self.receipt)
         print(self.total)
         # WORK IN PROGRESS AAAHHHHHH
@@ -131,14 +124,18 @@ class OrderGui:
             self.display2.insert(tk.INSERT, self.receipt) 
             self.display2.config(state=tk.DISABLED)
 
-            self.lb2 = tk.Label(self.confirm_window, text=(f"Your total is ${self.total}."), font=TEXT_FONT)
+            self.lb2 = tk.Label(self.confirm_window, text=(f"You have ordered {self.items} items. \nYour total is ${self.total}."), font=TEXT_FONT)
             self.lb2.pack(pady=10)
 
-            self.btn1 = tk.Button(self.confirm_window, text="Go back to edit", font=TEXT_FONT, command = lambda:[self.confirm_window.destroy(), self.confirm_window.grab_release()])
+            self.btn1 = tk.Button(self.confirm_window, text="Go back to edit", font=TEXT_FONT,
+            command = lambda:[self.confirm_window.destroy(), self.confirm_window.grab_release()])
             self.btn1.pack(pady=10)
 
-            self.btn2 = tk.Button(self.confirm_window, text="Confirm order", font=TEXT_FONT)
+            self.btn2 = tk.Button(self.confirm_window, text="Confirm order", font=TEXT_FONT, 
+            command = lambda:[self.write_order(), self.confirm_window.destroy(),
+            self.confirm_window.grab_release(), self.order_success()])
             self.btn2.pack(pady=10)
+
         
         else: #if order is empty
             self.empty_order_warning()
@@ -259,17 +256,20 @@ class OrderGui:
         """small popup box"""
         self.infobox2 = messagebox.showerror("Error", "Please select an option for cone, flavour and topping!")
 
-    def confirm_action(self):
-        self.response = messagebox.askyesno("Confirmation", "Are you sure you want to proceed?")
+    def confirm_new_order(self):
+        self.response = messagebox.askyesno("Confirmation", "Are you sure you want to start a new order?")
         
         if self.response:
-            return True
+            self.start_new_order()
         else: 
-            return False
+            pass
 
     def empty_order_warning(self):
         """small popup box"""
-        self.infobox2 = messagebox.showerror("Error", "You have no items in your order!")
+        self.infobox = messagebox.showerror("Error", "You have no items in your order!")
+
+    def order_success(self):
+        self.infobox = messagebox.showinfo("Success", "Order confirmed! Written to receipt.txt.")
 
     def start_new_order(self):
         """Resets the window back to it's starting state and resets the order."""
@@ -280,10 +280,19 @@ class OrderGui:
         self.toppingcb.set('')
 
         self.display1.config(state=tk.NORMAL)
-        self.display1.delete("1.0", tk.END) # clear display
+        self.display1.delete("1.0", tk.END)
+        self.display1.insert(tk.INSERT, "Order is empty.") # reset display
         self.display1.config(state=tk.DISABLED)
         pass
 
+    def write_order(self):
+        """writes the actual order to a txt file"""
+        self.receipt, self.total, self.items = self.order_converter.finalise_order(order)
+        with open("receipt.txt", "w", encoding="utf-8") as file:
+            file.write(self.receipt)
+            file.write(f"\n\n{self.items} items ordered.")
+            file.write(f"\n\nTotal: ${self.total}")
+        pass
 
 class OrderConversions:
     """Collection of functions that convert the order 2D list into formatted text strings ready for GUI displays"""
@@ -293,27 +302,44 @@ class OrderConversions:
         """converts the order 2d list to a formatted string."""
         res = "" # initialise variables
         for index, value in enumerate(list_input):
-            individual_price = cones.get(list_input[index][0]) + flavours.get(list_input[index][1]) + toppings.get(list_input[index][2])
-            res += (f"{list_input[index][0]} Cone, {list_input[index][1]} Flavour, {list_input[index][2]} Topping - ${individual_price} \n\n")
+            if list_input[index][2] == "None":
+                individual_price = cones.get(list_input[index][0]) + flavours.get(list_input[index][1]) + toppings.get(list_input[index][2])
+                res += (f"{list_input[index][0]} Cone, {list_input[index][1]} Flavour, No Topping - ${individual_price} \n\n")
+            else:
+                individual_price = cones.get(list_input[index][0]) + flavours.get(list_input[index][1]) + toppings.get(list_input[index][2])
+                res += (f"{list_input[index][0]} Cone, {list_input[index][1]} Flavour, {list_input[index][2]} Topping - ${individual_price} \n\n")
 
         return res.strip()
 
     def convert_item_to_text(self, list_input, position):
         """Converts a specified position of a 2D list into a formatted text string."""
         # literally just reused the same code as above slightly modified
-        price = cones.get(list_input[position][0]) + flavours.get(list_input[position][1]) + toppings.get(list_input[position][2])
-        res = (f"{list_input[position][0]} Cone, {list_input[position][1]} Flavour, {list_input[position][2]} Topping - ${price}") 
-        return res.strip()
-    
+        if list_input[position][2] == "None":
+            price = cones.get(list_input[position][0]) + flavours.get(list_input[position][1]) + toppings.get(list_input[position][2])
+            res = (f"{list_input[position][0]} Cone, {list_input[position][1]} Flavour, No Topping - ${price}") 
+            return res.strip()
+        else:
+            price = cones.get(list_input[position][0]) + flavours.get(list_input[position][1]) + toppings.get(list_input[position][2])
+            res = (f"{list_input[position][0]} Cone, {list_input[position][1]} Flavour, {list_input[position][2]} Topping - ${price}") 
+            return res.strip()
+        
     def finalise_order(self, list_input):
         """converts the order into a biiiig textstring INCLUDING prices"""
         res = ""
         price = 0
+        items = 0
         for index, value in enumerate(list_input):
-            individual_price = cones.get(list_input[index][0]) + flavours.get(list_input[index][1]) + toppings.get(list_input[index][2])
-            res += (f"{list_input[index][0]} Cone, {list_input[index][1]} Flavour, {list_input[index][2]} Topping - ${individual_price} \n\n")
-            price += cones.get(list_input[index][0]) + flavours.get(list_input[index][1]) + toppings.get(list_input[index][2])
-        return res.strip(), price
+            items += 1
+            if list_input[index][2] == "None":
+                individual_price = cones.get(list_input[index][0]) + flavours.get(list_input[index][1]) + toppings.get(list_input[index][2])
+                res += (f"{list_input[index][0]} Cone, {list_input[index][1]} Flavour, {list_input[index][2]} Topping - ${individual_price} \n\n")
+                price += cones.get(list_input[index][0]) + flavours.get(list_input[index][1]) + toppings.get(list_input[index][2])
+            else:
+                individual_price = cones.get(list_input[index][0]) + flavours.get(list_input[index][1]) + toppings.get(list_input[index][2])
+                res += (f"{list_input[index][0]} Cone, {list_input[index][1]} Flavour, {list_input[index][2]} Topping - ${individual_price} \n\n")
+                price += cones.get(list_input[index][0]) + flavours.get(list_input[index][1]) + toppings.get(list_input[index][2])
+
+        return res.strip(), price, items
 
 # main loop woohoo
 root = tk.Tk()
