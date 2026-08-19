@@ -99,21 +99,25 @@ class OrderGui:
         self.neworderbtn.grid(row=3, column=4, sticky="nsew")
     
     def confirm_order(self):
-        """finalises order"""
+        """Creates an order confirmation window that displays a user's order, price and total items."""
+
+        # IMPORTANT !!! FOR A LATER VERSION PLEASE ALLOW THE USER TO INPUT A NAME FOR THEIR ORDER 
+        # USE THAT NAME AS THE FILE NAME FOR THEIR RECEIPT
+        # CURRENT SYSTEM DOES NOT ALLOW FOR UNIQUE ORDERS !!  
+
         self.receipt, self.total, self.items = self.order_converter.finalise_order(order)
         print(self.receipt)
         print(self.total)
-        # WORK IN PROGRESS AAAHHHHHH
 
         if order: # if order has items
 
+            # toplevel window setup
             self.confirm_window = tk.Toplevel(root, bg="lightblue")
             self.confirm_window.title("Order Confirmation window")
             self.confirm_window.geometry("400x600")
             self.confirm_window.resizable(0, 0)
             self.confirm_window.transient(root)
             self.confirm_window.grab_set()
-
             self.lb1 = tk.Label(self.confirm_window, text="Order Confirmation window", font=TEXT_FONT)
             self.lb1.pack(pady=10)
 
@@ -127,15 +131,16 @@ class OrderGui:
             self.lb2 = tk.Label(self.confirm_window, text=(f"You have ordered {self.items} items. \nYour total is ${self.total}."), font=TEXT_FONT)
             self.lb2.pack(pady=10)
 
+            #go back to edit
             self.btn1 = tk.Button(self.confirm_window, text="Go back to edit", font=TEXT_FONT,
             command = lambda:[self.confirm_window.destroy(), self.confirm_window.grab_release()])
             self.btn1.pack(pady=10)
 
+            #confirm order
             self.btn2 = tk.Button(self.confirm_window, text="Confirm order", font=TEXT_FONT, 
             command = lambda:[self.write_order(), self.confirm_window.destroy(),
             self.confirm_window.grab_release(), self.order_success()])
             self.btn2.pack(pady=10)
-
         
         else: #if order is empty
             self.empty_order_warning()
@@ -213,7 +218,7 @@ class OrderGui:
             self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
             self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-            def _on_mousewheel(event):
+            def _on_mousewheel(event): #scrolling !
                 self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
                     
             self.canvas.bind_all("<MouseWheel>", _on_mousewheel)
@@ -221,12 +226,12 @@ class OrderGui:
             self.btn1 = tk.Button(self.removal_window, text="Go back to edit", font=TEXT_FONT, 
             command = lambda:[self.removal_window.destroy(), self.removal_window.grab_release(), 
                               self.removal_window.unbind_all("<MouseWheel>")])
+            # ok its a lot of commands but stuff breaks if i dont do this
             self.btn1.pack(pady=10)
 
             self.btn2 = tk.Button(self.removal_window, text="Remove selected items from order", font=TEXT_FONT, 
             command= lambda: [self.remove_selected(), self.removal_window.destroy(), self.show_removal_info(), 
                               self.removal_window.grab_release(), self.removal_window.unbind_all("<MouseWheel>")])  
-            # ok its a lot of commands but stuff breaks if i dont do this
             self.btn2.pack(pady=10)
 
         else:
@@ -235,7 +240,7 @@ class OrderGui:
     def remove_selected(self):
         """loops through the checkbox variable list and removes ticked items"""
         self.count = 0
-        for i in range(len(self.var_list) -1, -1, -1): # Loops backward through the list to avoid indexing issues
+        for i in range(len(self.var_list) -1, -1, -1): # loops backward through the list to avoid indexing issues
             if self.var_list[i].get(): # if selected
                 del order[i]
                 del self.var_list[i]
@@ -253,10 +258,11 @@ class OrderGui:
         self.infobox1 = messagebox.showinfo("Success", f"Removed {self.count} items succesfully!")
     
     def show_combobox_warning(self):
-        """small popup box"""
+        """small warning popup box for error handling - empty user input"""
         self.infobox2 = messagebox.showerror("Error", "Please select an option for cone, flavour and topping!")
 
     def confirm_new_order(self):
+        """confirmation popup for the start new order button"""
         self.response = messagebox.askyesno("Confirmation", "Are you sure you want to start a new order?")
         
         if self.response:
@@ -265,10 +271,11 @@ class OrderGui:
             pass
 
     def empty_order_warning(self):
-        """small popup box"""
+        """warning popup for empty order"""
         self.infobox = messagebox.showerror("Error", "You have no items in your order!")
 
     def order_success(self):
+        """success popup for confirm order"""
         self.infobox = messagebox.showinfo("Success", "Order confirmed! Written to receipt.txt.")
 
     def start_new_order(self):
